@@ -19,6 +19,20 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Netlify 배포 최적화
+    sourcemap: false, // 프로덕션에서 소스맵 비활성화
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React 관련 라이브러리를 별도 청크로 분리
+          'react-vendor': ['react', 'react-dom', 'react-hook-form'],
+          // UI 라이브러리를 별도 청크로 분리
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-select'],
+          // 차트 라이브러리를 별도 청크로 분리
+          'chart-vendor': ['recharts', 'plotly.js'],
+        },
+      },
+    },
   },
 
   plugins,

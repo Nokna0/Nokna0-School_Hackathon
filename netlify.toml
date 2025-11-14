@@ -1,0 +1,54 @@
+[build]
+  # 빌드 명령어 (클라이언트만 빌드)
+  command = "npm run build:client"
+
+  # 배포할 디렉토리 (Vite 빌드 출력)
+  publish = "dist/public"
+
+  # Node.js 버전 설정
+  environment = { NODE_VERSION = "20" }
+
+# SPA 라우팅을 위한 리다이렉트 규칙
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 환경 변수 설정 (Netlify Dashboard에서 설정해야 함)
+# GROQ_API_KEY
+# VITE_APP_TITLE
+# VITE_APP_LOGO
+# VITE_ANALYTICS_ENDPOINT
+# VITE_ANALYTICS_WEBSITE_ID
+
+# 빌드 설정
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
+
+# 헤더 설정
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
