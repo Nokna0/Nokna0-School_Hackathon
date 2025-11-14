@@ -18,10 +18,9 @@ services:
           name: edutech-db
           property: connectionString
       # 다음 환경 변수들은 Render 대시보드에서 수동으로 설정해야 함:
-      # - AWS_REGION
-      # - AWS_ACCESS_KEY_ID
-      # - AWS_SECRET_ACCESS_KEY
-      # - AWS_S3_BUCKET
+      # - CLOUDINARY_CLOUD_NAME
+      # - CLOUDINARY_API_KEY
+      # - CLOUDINARY_API_SECRET
       # - OPENAI_API_KEY
       # - CORS_ORIGIN (Netlify URL로 설정)
       # - VITE_APP_TITLE

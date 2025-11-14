@@ -199,11 +199,10 @@ VITE_OAUTH_PORTAL_URL=https://oauth.example.com
 # Database
 DATABASE_URL=mysql://user:password@localhost:3306/edutech
 
-# AWS S3 (파일 업로드용)
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_S3_BUCKET=your_bucket_name
+# Cloudinary (파일 업로드용)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
 # OpenAI API (AI 분석용)
 OPENAI_API_KEY=your_openai_api_key

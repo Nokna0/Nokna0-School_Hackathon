@@ -53,10 +53,11 @@
 - "Create new secret key" 클릭
 - 키를 안전한 곳에 복사 (다시 볼 수 없음)
 
-#### 2. AWS S3 설정 (파일 업로드용)
-- AWS 계정: https://aws.amazon.com/
-- S3 버킷 생성
-- IAM 사용자 생성 및 액세스 키 발급
+#### 2. Cloudinary 설정 (파일 업로드용)
+- Cloudinary 계정: https://cloudinary.com/users/register/free
+- 무료 플랜: 25GB 스토리지/월, 25GB 대역폭/월
+- 대시보드에서 Cloud Name, API Key, API Secret 확인
+- 설정 페이지: https://cloudinary.com/console
 
 ### 로컬에서 빌드 테스트
 
@@ -123,11 +124,10 @@ DATABASE_URL=mysql://user:password@host:3306/edutech
 # CORS (나중에 Netlify URL로 업데이트)
 CORS_ORIGIN=https://your-site.netlify.app
 
-# AWS S3
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_access_key_id_here
-AWS_SECRET_ACCESS_KEY=your_secret_access_key_here
-AWS_S3_BUCKET=your_bucket_name_here
+# Cloudinary (파일 스토리지)
+CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_API_KEY=your_api_key_here
+CLOUDINARY_API_SECRET=your_api_secret_here
 
 # OpenAI API
 OPENAI_API_KEY=sk-your_openai_api_key_here
@@ -427,9 +427,9 @@ npm run check
 **증상**: 파일 업로드 시 에러
 
 **해결**:
-1. AWS S3 환경 변수 확인
-2. S3 버킷 권한 설정 (Public access 차단 해제 또는 Presigned URL 사용)
-3. IAM 사용자에게 `s3:PutObject` 권한 부여
+1. Cloudinary 환경 변수 확인 (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)
+2. Cloudinary 계정 상태 확인 (무료 플랜 한도 초과 여부)
+3. 업로드 폴더 권한 확인 (Cloudinary 대시보드 → Settings → Upload)
 
 ---
 
