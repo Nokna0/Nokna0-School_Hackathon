@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { createHTTPServer } from "@trpc/server/adapters/standalone";
+import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "../routers/index.js";
 import { createContext } from "./context.js";
 import apiRoutes from "./routes.js";
@@ -20,18 +20,17 @@ app.use(morgan("combined"));
 // REST API routes
 app.use("/api", apiRoutes);
 
-// tRPC server
-const trpcServer = createHTTPServer({
-  middleware: [],
-  router: appRouter,
-  createContext,
-  onError({ path, error }) {
-    console.error(`Error in tRPC handler on path "${path}":`, error);
-  },
-});
-
-// Mount tRPC on /trpc path
-app.use("/trpc", trpcServer.middleware);
+// tRPC server - mount on /trpc path
+app.use(
+  "/trpc",
+  trpcExpress.createExpressMiddleware({
+    router: appRouter,
+    createContext,
+    onError({ path, error }) {
+      console.error(`Error in tRPC handler on path "${path}":`, error);
+    },
+  })
+);
 
 // Health check
 app.get("/health", (req, res) => {
