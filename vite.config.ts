@@ -4,9 +4,21 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // jsxLocPlugin 제거
-const plugins = [react(), tailwindcss(), vitePluginManusRuntime()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  vitePluginManusRuntime(),
+  nodePolyfills({
+    // Enable polyfills for specific globals and modules
+    include: ['buffer'],
+    globals: {
+      Buffer: true,
+    },
+  }),
+];
 
 export default defineConfig({
   // 개발 루트: client/
