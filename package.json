@@ -85,7 +85,8 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "cross-env": "^7.0.3"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",
@@ -98,7 +99,6 @@
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
-    "cross-env": "^7.0.3",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
     "pnpm": "^10.15.1",
