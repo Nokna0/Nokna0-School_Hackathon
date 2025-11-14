@@ -1,33 +1,63 @@
-# 🚀 Netlify 배포 가이드
+# 🚀 Netlify 풀스택 배포 가이드
 
-이 가이드는 EduTech 프로젝트를 Netlify에 배포하는 방법을 설명합니다.
+이 가이드는 EduTech 프로젝트를 **프론트엔드 + 백엔드** 모두 Netlify에 배포하는 방법을 설명합니다.
+
+## 🎯 배포 아키텍처
+
+- **프론트엔드**: React + Vite (정적 파일로 배포)
+- **백엔드**: Express + tRPC (Netlify Functions로 배포)
+- **데이터베이스**: 외부 MySQL 서비스 (PlanetScale, Railway 등)
+
+---
 
 ## 📋 배포 전 준비사항
 
 ### 1. Netlify 계정 생성
 - https://app.netlify.com/signup 에서 GitHub 계정으로 가입
 
-### 2. 리포지토리 준비
-- 모든 변경사항을 GitHub에 푸시
+### 2. 데이터베이스 설정 (선택사항)
+
+데이터를 저장하려면 외부 MySQL 데이터베이스가 필요합니다.
+
+#### 옵션 A: PlanetScale (권장 - 무료)
+1. https://planetscale.com/ 에서 계정 생성
+2. 새 데이터베이스 생성
+3. **Connect** → **Create password** 클릭
+4. **Connection string** 복사 (나중에 사용)
+
+#### 옵션 B: Railway (무료)
+1. https://railway.app/ 에서 계정 생성
+2. **New Project** → **Provision MySQL** 클릭
+3. **Variables** 탭에서 `DATABASE_URL` 복사
+
+#### 옵션 C: 데이터베이스 없이 배포
+- 데이터베이스 없이도 배포 가능 (학습 기록 저장 기능 제외)
+- AI 기능은 정상 작동합니다
+
+### 3. 리포지토리 준비
 ```bash
 git add .
-git commit -m "Add Netlify configuration"
+git commit -m "Add Netlify fullstack configuration"
 git push origin main
 ```
 
-## 🎯 Netlify 배포 방법
+---
+
+## 🚀 Netlify 배포 방법
 
 ### 방법 1: GitHub 연동 (권장)
 
 #### 1단계: 새 사이트 생성
-1. Netlify 대시보드에서 **"Add new site"** → **"Import an existing project"** 클릭
-2. **"Deploy with GitHub"** 선택
-3. GitHub 계정 연결 및 리포지토리 선택: `Nokna0-School_Hackathon`
+1. Netlify 대시보드: https://app.netlify.com/
+2. **"Add new site"** → **"Import an existing project"** 클릭
+3. **"Deploy with GitHub"** 선택
+4. GitHub 계정 연결 및 리포지토리 선택: `Nokna0-School_Hackathon`
 
 #### 2단계: 빌드 설정 확인
 다음 설정이 자동으로 감지됩니다 (`netlify.toml` 덕분):
-- **Build command**: `npm run build:client`
+- **Build command**: `npm run build`
 - **Publish directory**: `dist/public`
+- **Functions directory**: `netlify/functions`
 - **Node version**: 20
 
 #### 3단계: 환경 변수 설정
@@ -38,6 +68,11 @@ git push origin main
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
+**데이터베이스 사용 시 필수**:
+```
+DATABASE_URL=mysql://user:password@host:3306/database
+```
+
 **선택 환경 변수**:
 ```
 VITE_APP_TITLE=EduTech
@@ -46,7 +81,17 @@ VITE_ANALYTICS_ENDPOINT=
 VITE_ANALYTICS_WEBSITE_ID=
 ```
 
-> ⚠️ **중요**: GROQ API 키는 https://console.groq.com/ 에서 발급받으세요 (무료)
+**파일 업로드 사용 시 (AWS S3)**:
+```
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=ap-northeast-2
+AWS_S3_BUCKET=your-bucket-name
+```
+
+> ⚠️ **중요**:
+> - GROQ API 키: https://console.groq.com/ (무료)
+> - DATABASE_URL: PlanetScale 또는 Railway에서 복사
 
 #### 4단계: 배포 시작
 - **"Deploy site"** 클릭
@@ -74,7 +119,13 @@ netlify init
 
 #### 4단계: 환경 변수 설정
 ```bash
+# 필수
 netlify env:set GROQ_API_KEY "your_groq_api_key_here"
+
+# 데이터베이스 (선택)
+netlify env:set DATABASE_URL "mysql://user:password@host:3306/database"
+
+# 기타 (선택)
 netlify env:set VITE_APP_TITLE "EduTech"
 ```
 
@@ -89,96 +140,100 @@ netlify deploy
 
 ---
 
-## ⚠️ 중요: 백엔드 기능 제한
+## 🔧 백엔드 API 구조
 
-현재 프로젝트는 Express 서버와 MySQL 데이터베이스를 사용하는 풀스택 애플리케이션입니다.
-**Netlify에 프론트엔드만 배포하는 경우, 다음 기능들이 작동하지 않습니다**:
+### API 엔드포인트
+배포 후 백엔드 API는 다음 경로에서 사용 가능합니다:
 
-### 작동하지 않는 기능:
-- ❌ 학습 기록 저장/불러오기 (MySQL 데이터베이스)
-- ❌ PDF 파일 업로드 (서버 저장소/S3)
-- ❌ AI API 호출 (서버에서 Groq API 호출)
-- ❌ tRPC API 엔드포인트
-
-### 해결 방법:
-
-#### 옵션 1: 백엔드를 별도 서비스에 배포 (권장)
-
-**Render, Railway, Fly.io 등에 백엔드 배포**:
-1. 백엔드를 별도로 배포 (예: Render.com - 무료)
-2. 환경 변수로 API URL 설정:
 ```
-VITE_API_URL=https://your-backend.onrender.com
+https://your-site-name.netlify.app/api/trpc
 ```
 
-**Render 배포 예시**:
-```bash
-# render.yaml 생성
-services:
-  - type: web
-    name: edutech-api
-    env: node
-    buildCommand: npm run build:server
-    startCommand: npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: edutech-db
-          property: connectionString
-```
+### 사용 가능한 tRPC 프로시저
 
-#### 옵션 2: Netlify Functions 사용
+1. **health** (쿼리) - 서버 상태 확인
+   ```typescript
+   trpc.health.useQuery()
+   ```
 
-Netlify Functions로 서버리스 API 구현 (복잡함, 별도 마이그레이션 필요)
+2. **getStudyRecords** (쿼리) - 학습 기록 조회
+   ```typescript
+   trpc.getStudyRecords.useQuery()
+   ```
 
-#### 옵션 3: 전체를 Vercel에 배포
+3. **saveMathFormula** (뮤테이션) - 수학 공식 저장
+   ```typescript
+   trpc.saveMathFormula.useMutation()
+   ```
 
-Vercel은 풀스택 애플리케이션을 기본 지원합니다:
-- https://vercel.com/
-- `vercel` CLI로 한 번에 배포 가능
+4. **saveEnglishWord** (뮤테이션) - 영어 단어 저장
+   ```typescript
+   trpc.saveEnglishWord.useMutation()
+   ```
+
+5. **generateQuiz** (뮤테이션) - AI 퀴즈 생성
+   ```typescript
+   trpc.generateQuiz.useMutation()
+   ```
+
+6. **analyzePDF** (뮤테이션) - PDF 분석
+   ```typescript
+   trpc.analyzePDF.useMutation()
+   ```
+
+### 라우터 확장 방법
+백엔드 기능을 추가하려면 `server/routers/index.ts`를 수정하세요.
 
 ---
 
-## 🔧 배포 후 설정
+## 🗄️ 데이터베이스 마이그레이션
 
-### 커스텀 도메인 연결 (선택)
-1. Netlify 대시보드 → **"Domain settings"**
-2. **"Add custom domain"** 클릭
-3. 도메인 등록 업체에서 DNS 설정
+### PlanetScale 사용 시
 
-### HTTPS 자동 활성화
-Netlify는 자동으로 Let's Encrypt SSL 인증서를 제공합니다.
+1. **Drizzle 스키마 푸시**:
+```bash
+# 로컬에서 실행
+DATABASE_URL="your_planetscale_url" npm run db:push
+```
 
-### 자동 배포 설정
-GitHub 연동 시, `main` 브랜치에 푸시할 때마다 자동으로 재배포됩니다.
+2. **Netlify 환경 변수 설정**:
+```bash
+netlify env:set DATABASE_URL "your_planetscale_url"
+```
+
+### Railway 사용 시
+
+동일하게 DATABASE_URL 환경 변수를 설정하면 됩니다.
 
 ---
 
-## 📊 배포 상태 확인
+## ✅ 배포 후 확인사항
 
-### 빌드 로그 확인
-```bash
-netlify open --site
-```
+### 1. 프론트엔드 확인
+- [ ] 사이트 접속 가능
+- [ ] SPA 라우팅 작동 (새로고침 시에도 페이지 유지)
+- [ ] 이미지 및 정적 자산 로드 확인
 
-### 환경 변수 확인
-```bash
-netlify env:list
-```
+### 2. 백엔드 확인
+- [ ] API 헬스체크: `https://your-site-name.netlify.app/api/health`
+- [ ] 브라우저 콘솔에서 API 에러 없는지 확인
+- [ ] tRPC 엔드포인트 작동 확인
 
-### 배포 기록 확인
-Netlify 대시보드 → **"Deploys"** 탭
+### 3. 기능 확인
+- [ ] PDF 업로드 테스트
+- [ ] AI 기능 테스트 (수학 분석, 영어 번역 등)
+- [ ] 퀴즈 생성 테스트
+- [ ] 학습 기록 저장/불러오기 테스트
 
 ---
 
 ## 🐛 문제 해결
 
 ### 빌드 실패 시
+
 1. **로컬에서 빌드 테스트**:
 ```bash
-npm run build:client
+npm run build
 ```
 
 2. **Node 버전 확인**:
@@ -189,43 +244,167 @@ node --version  # v20 이상 필요
 3. **환경 변수 누락 확인**:
 빌드 로그에서 `VITE_*` 관련 에러 확인
 
+### API 호출 실패 시
+
+1. **Netlify Functions 로그 확인**:
+   - Netlify 대시보드 → **Functions** 탭
+   - 최근 호출 로그 확인
+
+2. **환경 변수 확인**:
+```bash
+netlify env:list
+```
+
+3. **CORS 에러 시**:
+   - `server/_core/index.ts`의 CORS 설정 확인
+   - Netlify에서는 기본적으로 같은 도메인이므로 CORS 문제 없음
+
 ### 404 에러 발생 시
-- `netlify.toml`과 `_redirects` 파일이 올바르게 설정되어 있는지 확인
+
+- `netlify.toml`의 리다이렉트 규칙 확인
+- API 경로가 `/api/*`로 시작하는지 확인
 - SPA 라우팅이 제대로 작동하는지 확인
 
-### 환경 변수가 적용되지 않을 때
-- Netlify 대시보드에서 환경 변수 재확인
-- 변수 이름이 `VITE_`로 시작하는지 확인 (Vite 빌드 시 필요)
-- 재배포 트리거: **"Trigger deploy"** → **"Clear cache and deploy site"**
+### 데이터베이스 연결 실패 시
+
+1. **DATABASE_URL 형식 확인**:
+```
+mysql://username:password@host:port/database
+```
+
+2. **데이터베이스 서비스 상태 확인**:
+   - PlanetScale: https://app.planetscale.com/
+   - Railway: https://railway.app/
+
+3. **IP 화이트리스트 확인**:
+   - PlanetScale은 IP 제한 없음
+   - 다른 서비스는 Netlify IP 허용 필요
+
+### Functions 타임아웃 시
+
+Netlify Functions는 기본적으로 10초 타임아웃입니다.
+- 무료 플랜: 10초
+- 유료 플랜: 최대 26초
+
+긴 작업은 비동기로 처리하거나 다른 서비스 사용을 고려하세요.
+
+---
+
+## 🔄 자동 배포 설정
+
+GitHub 연동 시, `main` 브랜치에 푸시할 때마다 자동으로 재배포됩니다.
+
+### Deploy 브랜치 변경
+1. Netlify 대시보드 → **Site configuration** → **Build & deploy**
+2. **Branch deploys** 섹션에서 브랜치 설정
+
+### Deploy Preview
+Pull Request 생성 시 자동으로 미리보기 배포가 생성됩니다.
+
+---
+
+## 📊 모니터링
+
+### Netlify 대시보드
+- **Analytics**: 트래픽 및 성능 확인
+- **Functions**: API 호출 로그 확인
+- **Deploys**: 배포 기록 및 롤백
+
+### 로그 확인
+```bash
+# 실시간 Functions 로그
+netlify functions:log api
+
+# 빌드 로그
+netlify open --site
+```
+
+---
+
+## 💰 비용
+
+### Netlify 무료 플랜 제한
+- **빌드 시간**: 300분/월
+- **대역폭**: 100GB/월
+- **Functions 실행**: 125K 요청/월, 100시간 실행/월
+
+### 데이터베이스 무료 플랜
+- **PlanetScale**: 5GB 저장소, 1B row reads/월
+- **Railway**: $5 크레딧/월 (약 500시간 실행)
+
+대부분의 학교 프로젝트는 무료 플랜으로 충분합니다!
+
+---
+
+## 🎓 추가 기능 구현 가이드
+
+### 1. 새 API 엔드포인트 추가
+
+`server/routers/index.ts`에 새 프로시저 추가:
+
+```typescript
+export const appRouter = router({
+  // 기존 프로시저...
+
+  // 새 프로시저 추가
+  myNewEndpoint: publicProcedure
+    .input(z.object({ name: z.string() }))
+    .mutation(async ({ input }) => {
+      // 로직 구현
+      return { result: "success" };
+    }),
+});
+```
+
+클라이언트에서 사용:
+```typescript
+const mutation = trpc.myNewEndpoint.useMutation();
+mutation.mutate({ name: "test" });
+```
+
+### 2. AI 기능 추가 (Groq API)
+
+```typescript
+import OpenAI from "openai";
+
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
+
+const response = await groq.chat.completions.create({
+  model: "llama-3.3-70b-versatile",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+### 3. 파일 업로드 처리
+
+Netlify Functions에서는 파일 크기 제한(6MB)이 있습니다.
+큰 파일은 클라이언트에서 직접 S3에 업로드하는 것을 권장합니다.
 
 ---
 
 ## 📚 추가 리소스
 
 - [Netlify 공식 문서](https://docs.netlify.com/)
-- [Vite 환경 변수 가이드](https://vitejs.dev/guide/env-and-mode.html)
 - [Netlify Functions 가이드](https://docs.netlify.com/functions/overview/)
+- [tRPC 공식 문서](https://trpc.io/)
+- [Drizzle ORM 문서](https://orm.drizzle.team/)
+- [PlanetScale 가이드](https://planetscale.com/docs)
 
 ---
 
-## ✅ 체크리스트
+## 🎉 배포 완료!
 
-배포 전 확인사항:
-- [ ] GitHub에 모든 변경사항 푸시 완료
-- [ ] `netlify.toml` 파일 존재
-- [ ] `client/public/_redirects` 파일 존재
-- [ ] Groq API 키 발급 완료
-- [ ] Netlify 계정 생성 완료
-- [ ] 백엔드 배포 방법 결정 (선택)
+배포가 성공적으로 완료되면:
 
-배포 후 확인사항:
-- [ ] 사이트 접속 확인
-- [ ] SPA 라우팅 작동 확인 (새로고침 시에도 페이지 유지)
-- [ ] 환경 변수 적용 확인
-- [ ] 이미지 및 정적 자산 로드 확인
+1. **URL 확인**: `https://your-site-name.netlify.app`
+2. **커스텀 도메인 연결** (선택):
+   - Netlify 대시보드 → **Domain management**
+3. **팀원들과 공유**하세요!
 
----
+문제가 발생하면 이 가이드의 **문제 해결** 섹션을 참고하거나,
+Netlify 대시보드의 빌드 로그를 확인하세요.
 
-**배포 성공 시 URL**: `https://your-site-name.netlify.app`
-
-🎉 배포 완료 후 팀원들과 공유하세요!
+**Happy coding! 🚀**

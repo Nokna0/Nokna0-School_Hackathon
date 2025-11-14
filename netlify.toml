@@ -1,25 +1,44 @@
 [build]
-  # 빌드 명령어 (클라이언트만 빌드)
-  command = "npm run build:client"
+  # 빌드 명령어 (클라이언트 + 서버 빌드)
+  command = "npm run build"
 
   # 배포할 디렉토리 (Vite 빌드 출력)
   publish = "dist/public"
 
+  # Netlify Functions 디렉토리
+  functions = "netlify/functions"
+
   # Node.js 버전 설정
   environment = { NODE_VERSION = "20" }
 
-# SPA 라우팅을 위한 리다이렉트 규칙
+# API 요청을 Netlify Functions로 라우팅
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA 라우팅을 위한 리다이렉트 규칙 (API가 아닌 경로만)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
 # 환경 변수 설정 (Netlify Dashboard에서 설정해야 함)
-# GROQ_API_KEY
-# VITE_APP_TITLE
-# VITE_APP_LOGO
-# VITE_ANALYTICS_ENDPOINT
-# VITE_ANALYTICS_WEBSITE_ID
+#
+# 필수 환경 변수:
+# GROQ_API_KEY - Groq AI API 키 (https://console.groq.com/)
+# DATABASE_URL - MySQL 데이터베이스 연결 URL (예: PlanetScale, Railway)
+#
+# 선택 환경 변수:
+# VITE_APP_TITLE - 앱 제목
+# VITE_APP_LOGO - 로고 경로
+# VITE_ANALYTICS_ENDPOINT - 분석 엔드포인트
+# VITE_ANALYTICS_WEBSITE_ID - 분석 웹사이트 ID
+# AWS_ACCESS_KEY_ID - AWS S3 액세스 키 (파일 업로드용)
+# AWS_SECRET_ACCESS_KEY - AWS S3 시크릿 키
+# AWS_REGION - AWS 리전
+# AWS_S3_BUCKET - S3 버킷 이름
 
 # 빌드 설정
 [build.processing]
