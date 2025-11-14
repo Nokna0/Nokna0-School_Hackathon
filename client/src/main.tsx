@@ -37,10 +37,14 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// API URL: 환경 변수로 백엔드 URL 지정 (기본값: 상대 경로)
+const API_URL = import.meta.env.VITE_API_URL || "";
+const TRPC_URL = API_URL ? `${API_URL}/trpc` : "/api/trpc";
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: TRPC_URL,
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {

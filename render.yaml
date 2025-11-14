@@ -1,0 +1,39 @@
+services:
+  # 백엔드 API 서버
+  - type: web
+    name: edutech-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build:server
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # 데이터베이스 연결 (아래 database와 자동 연결)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: edutech-db
+          property: connectionString
+      # 다음 환경 변수들은 Render 대시보드에서 수동으로 설정해야 함:
+      # - AWS_REGION
+      # - AWS_ACCESS_KEY_ID
+      # - AWS_SECRET_ACCESS_KEY
+      # - AWS_S3_BUCKET
+      # - OPENAI_API_KEY
+      # - CORS_ORIGIN (Netlify URL로 설정)
+      # - VITE_APP_TITLE
+      # - VITE_APP_ID
+      # - VITE_OAUTH_PORTAL_URL
+    healthCheckPath: /health
+    autoDeploy: true
+
+databases:
+  # MySQL 데이터베이스
+  - name: edutech-db
+    databaseName: edutech
+    plan: free
+    # Render는 PostgreSQL만 무료 제공, MySQL은 유료
+    # 대신 PostgreSQL 사용 권장 또는 외부 MySQL 서비스 사용
