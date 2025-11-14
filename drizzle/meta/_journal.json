@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762626135983,
+      "tag": "0000_square_whizzer",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762626182934,
+      "tag": "0001_closed_lake",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762747452883,
+      "tag": "0002_colossal_mattie_franklin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1763077609137,
+      "tag": "0003_parallel_gertrude_yorkes",
+      "breakpoints": true
+    }
+  ]
+}
