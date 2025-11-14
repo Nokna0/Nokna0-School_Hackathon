@@ -1,4 +1,3 @@
-// useAuth 제거 - 로컬 환경에서는 인증 불필요
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
@@ -8,8 +7,8 @@ import * as pdfjsLib from "pdfjs-dist";
 import BlankQuiz from "@/components/BlankQuiz";
 import { useState, useEffect, useRef } from "react";
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+// Set up PDF.js worker - standardized across all pages
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface StudyMaterial {
   id: number;
@@ -30,22 +29,27 @@ interface QuizQuestion {
   explanation?: string;
 }
 
+interface QuizData {
+  questions: QuizQuestion[];
+}
+
+interface RenderTask {
+  cancel: () => void;
+  promise: Promise<void>;
+}
+
 export default function ChemistryStudyPage() {
-  // 로컬 환경용 더미 userId
-  const userId = 1;
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
-  // 파일 업로드 기능 제거됨
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [pdfText, setPdfText] = useState("");
   const [showQuiz, setShowQuiz] = useState(false);
-  const [quizData, setQuizData] = useState<any>(null);
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
-  // 파일 업로드 기능 제거됨
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const renderTaskRef = useRef<any>(null);
+  const renderTaskRef = useRef<RenderTask | null>(null);
 
   // Fetch materials
   const { data: materialsData, isLoading } = trpc.materials.list.useQuery(
@@ -57,8 +61,6 @@ export default function ChemistryStudyPage() {
       setMaterials(materialsData as StudyMaterial[]);
     }
   }, [materialsData]);
-
-  // 파일 업로드 함수 제거됨
 
   const extractTextFromPDF = async (url: string) => {
     try {
@@ -85,7 +87,7 @@ export default function ChemistryStudyPage() {
           canvasRef.current.width = viewport.width;
           canvasRef.current.height = viewport.height;
           context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-          
+
           try {
             renderTaskRef.current = page.render({ canvasContext: context, viewport, canvas: canvasRef.current });
             await renderTaskRef.current.promise;
@@ -104,15 +106,15 @@ export default function ChemistryStudyPage() {
   useEffect(() => {
     if (selectedMaterial) {
       let isMounted = true;
-      
+
       const loadPDF = async () => {
         if (isMounted) {
           await extractTextFromPDF(selectedMaterial.fileUrl);
         }
       };
-      
+
       loadPDF();
-      
+
       return () => {
         isMounted = false;
         if (renderTaskRef.current) {
@@ -144,15 +146,6 @@ export default function ChemistryStudyPage() {
     }
   };
 
-  // 로컬 환경에서는 로그인 체크 불필요
-  if (false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>로그인이 필요합니다.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -166,9 +159,6 @@ export default function ChemistryStudyPage() {
               </Button>
             </Link>
             <h1 className="text-2xl font-bold">화학 학습</h1>
-          </div>
-          <div>
-            {/* 파일 업로드 기능 제거됨 */}
           </div>
         </div>
       </div>

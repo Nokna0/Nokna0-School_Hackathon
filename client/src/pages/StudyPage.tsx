@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,12 +30,17 @@ export default function StudyPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
 
   const subjectLabel: Record<Subject, string> = {
     english: "영어",
     math: "수학",
     chemistry: "화학",
   };
+
+  // Initialize mutations at component level (not in event handlers)
+  const uploadMutation = trpc.materials.upload.useMutation();
+  const materialsUtils = trpc.materials.useUtils();
 
   // Fetch materials
   const { data: materialsData, isLoading } = trpc.materials.list.useQuery(
@@ -49,75 +54,95 @@ export default function StudyPage() {
     }
   }, [materialsData]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !subject) return;
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !subject) return;
 
-    setUploading(true);
+      setUploading(true);
+      try {
+        // Upload to S3
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error("Upload failed");
+
+        const { fileKey, fileUrl } = await response.json();
+
+        // Save to database using pre-initialized mutation
+        await uploadMutation.mutateAsync({
+          subject: subject as Subject,
+          fileName: file.name,
+          fileKey,
+          fileUrl,
+          fileSize: file.size,
+        });
+
+        // Refresh materials list using utils
+        await materialsUtils.materials.list.invalidate();
+      } catch (error) {
+        console.error("Upload error:", error);
+        alert("파일 업로드에 실패했습니다.");
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [subject, uploadMutation, materialsUtils]
+  );
+
+  const renderPDF = useCallback(async (url: string, pageNum: number = 1) => {
     try {
-      // Upload to S3
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-
-      const { fileKey, fileUrl } = await response.json();
-
-      // Save to database
-      const uploadMutation = trpc.materials.upload.useMutation();
-      await uploadMutation.mutateAsync({
-        subject: subject as Subject,
-        fileName: file.name,
-        fileKey,
-        fileUrl,
-        fileSize: file.size,
-      });
-
-      // Refresh materials list
-      const { data: newMaterials } = await trpc.materials.list.useQuery(
-        { subject: subject as Subject }
-      );
-      setMaterials(newMaterials as StudyMaterial[]);
+      const pdf = await pdfjsLib.getDocument(url).promise;
+      pdfDocRef.current = pdf;
+      setTotalPages(pdf.numPages);
+      await renderPage(pdf, pageNum);
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("파일 업로드에 실패했습니다.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      console.error("PDF error:", error);
     }
-  };
+  }, []);
 
-  const renderPDF = async (url: string) => {
-    const pdf = await pdfjsLib.getDocument(url).promise;
-    setTotalPages(pdf.numPages);
-    renderPage(pdf, 1);
-  };
+  const renderPage = useCallback(async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
+    try {
+      const page = await pdf.getPage(pageNum);
+      const canvas = document.getElementById("pdf-canvas") as HTMLCanvasElement;
+      if (!canvas) return;
 
-  const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
-    const page = await pdf.getPage(pageNum);
-    const canvas = document.getElementById("pdf-canvas") as HTMLCanvasElement;
-    if (!canvas) return;
+      const viewport = page.getViewport({ scale: 1.5 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
 
-    const viewport = page.getViewport({ scale: 1.5 });
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+      const context = canvas.getContext("2d");
+      if (!context) return;
 
-    const context = canvas.getContext("2d");
-    if (!context) return;
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+        canvas: canvas,
+      }).promise;
 
-    await page.render({
-      canvasContext: context,
-      viewport: viewport,
-      canvas: canvas,
-    }).promise;
+      setCurrentPage(pageNum);
+    } catch (error) {
+      console.error("Render error:", error);
+    }
+  }, []);
 
-    setCurrentPage(pageNum);
-  };
+  const handlePreviousPage = useCallback(() => {
+    if (currentPage > 1 && pdfDocRef.current) {
+      renderPage(pdfDocRef.current, currentPage - 1);
+    }
+  }, [currentPage, renderPage]);
+
+  const handleNextPage = useCallback(() => {
+    if (currentPage < totalPages && pdfDocRef.current) {
+      renderPage(pdfDocRef.current, currentPage + 1);
+    }
+  }, [currentPage, totalPages, renderPage]);
 
   if (isLoading) {
     return (
@@ -228,11 +253,7 @@ export default function StudyPage() {
                     {totalPages > 0 && (
                       <div className="flex items-center justify-between">
                         <Button
-                          onClick={() => {
-                            if (currentPage > 1) {
-                              renderPDF(selectedMaterial.fileUrl);
-                            }
-                          }}
+                          onClick={handlePreviousPage}
                           disabled={currentPage === 1}
                           variant="outline"
                         >
@@ -242,11 +263,7 @@ export default function StudyPage() {
                           {currentPage} / {totalPages}
                         </span>
                         <Button
-                          onClick={() => {
-                            if (currentPage < totalPages) {
-                              renderPDF(selectedMaterial.fileUrl);
-                            }
-                          }}
+                          onClick={handleNextPage}
                           disabled={currentPage === totalPages}
                           variant="outline"
                         >
