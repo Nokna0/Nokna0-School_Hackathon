@@ -1,0 +1,27 @@
+services:
+  # Backend API Service
+  - type: web
+    name: edutech-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build:server
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+    healthCheckPath: /api/health
