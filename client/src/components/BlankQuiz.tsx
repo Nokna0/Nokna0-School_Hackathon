@@ -17,12 +17,29 @@ interface QuizQuestion {
   explanation?: string;
 }
 
+interface QuizResult {
+  questionId: string;
+  isCorrect: boolean;
+  userAnswer: string;
+  correctAnswer: string;
+  explanation?: string;
+}
+
+interface QuizResultSummary {
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  accuracy: string;
+  feedback: string;
+  results: QuizResult[];
+}
+
 interface BlankQuizProps {
   questions: QuizQuestion[];
   title: string;
   description: string;
   estimatedTime: number;
-  onComplete?: (results: any) => void;
+  onComplete?: (results: QuizResultSummary) => void;
 }
 
 export default function BlankQuiz({
@@ -35,7 +52,7 @@ export default function BlankQuiz({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
-  const [quizResults, setQuizResults] = useState<any>(null);
+  const [quizResults, setQuizResults] = useState<QuizResultSummary | null>(null);
 
   // 안전한 데이터 처리
   if (!questions || questions.length === 0) {

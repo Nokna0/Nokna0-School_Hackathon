@@ -3,13 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, ArrowLeft } from "lucide-react";
-// useAuth 제거 - 로컬 환경에서는 인증 불필요
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
 export default function StudyRecordsPage() {
-  // 로컬 환경용 더미 userId
-  const userId = 1;
   const [, setLocation] = useLocation();
   
   const mathFormulasQuery = trpc.studyRecords.getMathFormulas.useQuery();

@@ -17,6 +17,12 @@ interface HighlightedWord {
   englishDefinition: string;
 }
 
+interface WordDetails {
+  pronunciation?: string;
+  partOfSpeech?: string;
+  examples?: string[];
+}
+
 interface EnglishHighlighterProps {
   text: string;
   highlightedWords: HighlightedWord[];
@@ -27,7 +33,7 @@ export default function EnglishHighlighter({
   highlightedWords,
 }: EnglishHighlighterProps) {
   const [selectedWord, setSelectedWord] = useState<HighlightedWord | null>(null);
-  const [wordDetails, setWordDetails] = useState<any>(null);
+  const [wordDetails, setWordDetails] = useState<WordDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const getDifficultyColor = (difficulty: string) => {

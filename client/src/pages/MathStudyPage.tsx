@@ -8,9 +8,9 @@ import MathVisualizer from "@/components/MathVisualizer";
 
 // pdfjs
 import * as pdfjsLib from "pdfjs-dist";
-import PDFWorker from "pdfjs-dist/build/pdf.worker.min.mjs?worker";
 
-pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
+// Set up PDF.js worker - standardized across all pages
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface StudyMaterial {
   id: number;
@@ -26,17 +26,35 @@ interface QuestionHelpResult {
   phraseExplanations: { phrase: string; meaning: string }[];
 }
 
+interface MathExpression {
+  latex?: string;
+  description?: string;
+}
+
+interface SelectionBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  containerRect: DOMRect;
+}
+
+interface DragStartCoord {
+  x: number;
+  y: number;
+}
+
 export default function MathStudyPage() {
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
 
-  const [mathExpressions, setMathExpressions] = useState<any[]>([]);
+  const [mathExpressions, setMathExpressions] = useState<MathExpression[]>([]);
   const [graphDescriptions, setGraphDescriptions] = useState<string[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
 
-  // ⬇️ 새로 추가된 상태 (답지 상세 설명)
+  // Answer sheet detailed explanation
   const [answerExplanation, setAnswerExplanation] = useState<string>("");
   const [answerAnalyzing, setAnswerAnalyzing] = useState(false);
 
@@ -44,8 +62,8 @@ export default function MathStudyPage() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [selectionBox, setSelectionBox] = useState<any>(null);
+  const [dragStart, setDragStart] = useState<DragStartCoord | null>(null);
+  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
 
   const { data: materialsData } = trpc.materials.list.useQuery({ subject: "math" });
 
