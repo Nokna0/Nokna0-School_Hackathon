@@ -1,6 +1,15 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { z } from "zod";
+import { v2 as cloudinary } from "cloudinary";
+import { Readable } from "stream";
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const router = Router();
 
@@ -62,15 +71,32 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
 
     const { fileName, subject } = validation.data;
 
-    // TODO: Upload file to S3
-    // For now, return mock response
-    const fileKey = `${subject}/${Date.now()}-${fileName}`;
-    const fileUrl = `s3://bucket/${fileKey}`;
+    // Upload to Cloudinary
+    const uploadPromise = new Promise<any>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: "raw", // For PDF files
+          folder: `edutech/${subject}`, // Organize by subject
+          public_id: `${Date.now()}-${fileName.replace(/\.[^/.]+$/, "")}`, // Remove extension
+          use_filename: true,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+
+      // Convert buffer to stream and pipe to Cloudinary
+      const bufferStream = Readable.from(req.file.buffer);
+      bufferStream.pipe(uploadStream);
+    });
+
+    const result = await uploadPromise;
 
     return res.json({
       success: true,
-      fileKey,
-      fileUrl,
+      fileKey: result.public_id,
+      fileUrl: result.secure_url,
       fileName,
       size: req.file.size,
     });
