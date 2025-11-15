@@ -5,12 +5,6 @@ import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "../routers/index.js";
 import { createContext } from "./context.js";
 import apiRoutes from "./routes.js";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const port = parseInt(process.env.PORT || "3000", 10);
 const isDev = process.env.NODE_ENV === "development";
@@ -26,9 +20,9 @@ app.use(morgan("combined"));
 // REST API routes
 app.use("/api", apiRoutes);
 
-// tRPC server - mount on /api/trpc path
+// tRPC server - mount on /trpc path
 app.use(
-  "/api/trpc",
+  "/trpc",
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext,
@@ -43,24 +37,10 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Serve static files in production or development
-if (isDev) {
-  // Development: Use Vite middleware
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: "spa",
-  });
-  app.use(vite.middlewares);
-} else {
-  // Production: Serve built files
-  const distPath = path.join(__dirname, "../public");
-  app.use(express.static(distPath));
-
-  // SPA fallback - serve index.html for all non-API routes
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
-}
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
